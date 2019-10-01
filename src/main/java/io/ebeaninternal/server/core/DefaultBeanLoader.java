@@ -288,6 +288,7 @@ public class DefaultBeanLoader {
     // and put the data into the original bean
     query.setUsageProfiling(false);
     query.setPersistenceContext(pc);
+    query.setIncludeSoftDeletes();
 
     query.setMode(mode);
     query.setId(id);

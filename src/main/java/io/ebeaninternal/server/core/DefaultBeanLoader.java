@@ -273,6 +273,20 @@ public class DefaultBeanLoader {
       }
     }
 
+    Object dbBean = buildQuery(mode, embeddedOwnerIndex, ebi, pc, desc, id, draft).findOne();
+    if (dbBean == null) {
+      dbBean = buildQuery(mode, embeddedOwnerIndex, ebi, pc, desc, id, draft).setIncludeSoftDeletes().findOne();
+      if (dbBean == null) {
+        String msg = "Bean not found during lazy load or refresh." + " id[" + id + "] type[" + desc.getBeanType() + "]";
+        throw new EntityNotFoundException(msg);
+      }
+    }
+
+    desc.resetManyProperties(dbBean);
+
+  }
+
+  private SpiQuery<?> buildQuery(Mode mode, int embeddedOwnerIndex, EntityBeanIntercept ebi, PersistenceContext pc, BeanDescriptor<?> desc, Object id, boolean draft) {
     SpiQuery<?> query = server.createQuery(desc.getBeanType());
     query.setLazyLoadProperty(ebi.getLazyLoadProperty());
     if (draft) {
@@ -288,7 +302,6 @@ public class DefaultBeanLoader {
     // and put the data into the original bean
     query.setUsageProfiling(false);
     query.setPersistenceContext(pc);
-    query.setIncludeSoftDeletes();
 
     query.setMode(mode);
     query.setId(id);
@@ -308,14 +321,6 @@ public class DefaultBeanLoader {
       // included in a 'refresh' query
       query.select("*");
     }
-
-    Object dbBean = query.findOne();
-    if (dbBean == null) {
-      String msg = "Bean not found during lazy load or refresh." + " id[" + id + "] type[" + desc.getBeanType() + "]";
-      throw new EntityNotFoundException(msg);
-    }
-
-    desc.resetManyProperties(dbBean);
-
+    return query;
   }
 }
